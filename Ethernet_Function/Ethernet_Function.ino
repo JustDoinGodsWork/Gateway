@@ -1,4 +1,4 @@
-#include <SPI.h>
+//#include <SPI.h>
 #include <EthernetENC.h>
 
 #define ETHERNET_DEBUG 1

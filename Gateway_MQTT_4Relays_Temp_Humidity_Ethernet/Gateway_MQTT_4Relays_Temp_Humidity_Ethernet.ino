@@ -16,13 +16,17 @@
 #include <SoftwareSerial.h>
 
 #define DEBUG 0
+#define debug 1
+#define debug1 0
+
+int read1 = 0;
 
 int i = 0;
 int statusCode;
 const char* ssid = "Default SSID";
 const char* passphrase = "Default pass";
 
-uint8_t W=0, E=1;
+uint8_t W = 0, E = 1;
 
 String st;
 String content;
@@ -66,7 +70,7 @@ int minVal;
 int maxVal;
 int randomNumber;
 
-uint16_t Mread[12], Mread2[11];
+uint16_t Mread1[11], Mread2[11], Mread3[11];
 
 
 bool cbWrite(Modbus::ResultCode event, uint16_t transactionId, void* data) {
@@ -105,7 +109,7 @@ void setup() {
   Serial.begin(115200);
   S.begin(9600, SWSERIAL_8N1);
 
-  
+
 
   mb.begin(&S, DE_RE);  //Assing Software serial port to Modbus instance for MAX485 chip having DI,DE,RE,RO Pin at TTL side
   mb.master();          //Assing Modbus function as master
@@ -125,7 +129,7 @@ void setup() {
   WiFi.disconnect();
   EEPROM.begin(512);  //Initialasing EEPROM
   delay(10);
-  
+
   Serial.println("Reading EEPROM ssid");
   for (int i = 0; i < 32; ++i) {
     esid += char(EEPROM.read(i));
@@ -172,7 +176,6 @@ void reconnect() {
 
   // Subscribe to a topic
   client.subscribe(AWS_IOT_SUBSCRIBE_TOPIC1);
-
 
   Serial.println("AWS IoT Connected!");
 }
@@ -221,10 +224,10 @@ void loop() {
     }
 
     client.loop();
-    delay(1000);
+    //delay(1000);
 
     long now = millis();
-    if (now - lastMsg > 5000) {
+    if (now - lastMsg > 5000&&read1 == 0) {
       lastMsg = now;
 
       // Temperature in Celsius
@@ -256,96 +259,153 @@ void loop() {
       Serial.println(humString);
       client.publish(AWS_IOT_PUBLISH_TOPIC2, humString);
       client.publish(AWS_IOT_PUBLISH_TOPIC3, data.c_str());
+
+      
     }
 
     if (!mb.slave()) {
-      //(SlaevID,Address,Buffer,Range of data,Modus call)
-      //Serial.println(InttoFloat( Mread0[0], Mread0[1]));
-      mb.readHreg(1, 0, Mread, 12, cbWrite);
-      if (DEBUG) {
-        Serial.print("Mread[0");
-        Serial.print("] : ");
-        Serial.println(Mread[0]);
-        Serial.print("Mread[1");
-        Serial.print("] : ");
-        Serial.println(Mread[1]);
-        Serial.print("Mread[2");
-        Serial.print("] : ");
-        Serial.println(Mread[2]);
-        Serial.print("Mread[3");
-        Serial.print("] : ");
-        Serial.println(Mread[3]);
-        Serial.print("Mread[4");
-        Serial.print("] : ");
-        Serial.println(Mread[4]);
-        Serial.print("Mread[5");
-        Serial.print("] : ");
-        Serial.println(Mread[5]);
-        Serial.print("Mread[6");
-        Serial.print("] : ");
-        Serial.println(Mread[6]);
-        Serial.print("Mread[7");
-        Serial.print("] : ");
-        Serial.println(Mread[7]);
-        Serial.print("Mread[8");
-        Serial.print("] : ");
-        Serial.println(Mread[8]);
-        Serial.print("Mread[9");
-        Serial.print("] : ");
-        Serial.println(Mread[9]);
-        Serial.print("Mread[10");
-        Serial.print("] : ");
-        Serial.println(Mread[10]);
-        Serial.print("Mread[11");
-        Serial.print("] : ");
-        Serial.println(Mread[11]);
+      if (read1 == 0) {
+        if (debug1)
+          Serial.println(" Reading 0-10");
+        mb.readHreg(1, 0, Mread1, 9, cbWrite);
+        if (debug) {
+          Serial.print("Va : ");
+          Serial.println(Mread1[0]);
+          Serial.print("Vb : ");
+          Serial.println(Mread1[1]);
+          Serial.print("Vc : ");
+          Serial.println(Mread1[2]);
+          Serial.print("Vab : ");
+          Serial.println(Mread1[3]);
+          Serial.print("Vbc : ");
+          Serial.println(Mread1[4]);
+          Serial.print("Vca : ");
+          Serial.println(Mread1[5]);
+          Serial.print("Ia : ");
+          Serial.println(Mread1[6]);
+          Serial.print("Ib : ");
+          Serial.println(Mread1[7]);
+          Serial.print("Ic : ");
+          Serial.println(Mread1[8]);
+        }
+        read1 = 3;
       }
-      //mb.readHreg(1, 0, Mread2, 11, cbWrite);
+      else if (read1 == 1) {
+        if (debug1)
+          Serial.println(" Reading 6-15");
+        mb.readHreg(1, 9, Mread2, 6, cbWrite);
+        if (debug) {
+          Serial.print("pfa : ");
+          Serial.println(Mread2[0]);
+          Serial.print("pfb : ");
+          Serial.println(Mread2[1]);
+          Serial.print("pfc : ");
+          Serial.println(Mread2[2]);
+          Serial.print("Pa : ");
+          Serial.println(Mread2[3]);
+          Serial.print("Pb : ");
+          Serial.println(Mread2[4]);
+          Serial.print("Pc : ");
+          Serial.println(Mread2[5]);
+        }
+        read1 = 4;
+      }
+      else if (read1 == 2)
+      {
+        if (debug1)
+          Serial.println(" Reading 14-23");
+        mb.readHreg(1, 16, Mread3, 8, cbWrite);
+        if (debug) {
+          Serial.print("App Power (a) : ");
+          Serial.println(Mread3[0]);
+          Serial.print("App Power (b) : ");
+          Serial.println(Mread3[1]);
+          Serial.print("App Power (c) : ");
+          Serial.println(Mread3[2]);
+          Serial.print("Total Active Power : ");
+          Serial.println(Mread3[3]);
+          Serial.print("Total App Power : ");
+          Serial.println(Mread3[4]);
+          Serial.print("kWh Lower : ");
+          Serial.println(Mread3[5]);
+          Serial.print("kWh Upper : ");
+          Serial.println(Mread3[6]);
+          Serial.print("kVAh Lower : ");
+          Serial.println(Mread3[7]);
+          Serial.print("kVAh Upper : ");
+          Serial.println(Mread3[8]);
+
+          Serial.println("\n\n####################################");
+        }
+        read1 = 5;
+      }
+    } else if (debug1) {
+      Serial.println(" : mb is SLAVE cannot read");
     }
 
+    if (read1 == 3) {
+      read1 = 1;
+      if (debug1) {
+        Serial.println("Setting Read1 =1, will read 6-15");
+      }
+    }
+    else if (read1 == 4) {
+      read1 = 2;
+      if (debug1) {
+        Serial.println("Setting Read1 =2, will read 14-23");
+      }
+    }
+    else if (read1 == 5) {
+      read1 = 0;
+      if (debug1) {
+        Serial.println("Setting Read1 =0, will read 0-9");
+      }
+      delay(1000);
+    }
 
-    va = Mread[0];
-    vb = Mread[1];
-    vc = Mread[2];
+    if (read1 == 0) {
+      va = Mread1[0]/10;
+      vb = Mread1[1]/10;
+      vc = Mread1[2]/10;
 
-    ia = Mread[6];
-    ib = Mread[7];
-    ic = Mread[8];
+      ia = Mread1[6]/10;
+      ib = Mread1[7]/10;
+      ic = Mread1[8]/10;
 
-    pfa = Mread[9];
-    pfb = Mread[10];
-    pfc = Mread[11];
+      pfa = Mread2[0]/1000;
+      pfb = Mread2[1]/1000;
+      pfc = Mread2[2]/1000;
 
-    kwa = (sqrt(3)) * ((va * ia) + (vb * ib) + (vc * ic));
-    kw = (sqrt(3)) * ((va * ia * pfa) + (vb * ib * pfa) + (vc * ic * pfa));
+      kwa = (sqrt(3)) * ((va * ia) + (vb * ib) + (vc * ic));
+      kw = (sqrt(3)) * ((va * ia * pfa) + (vb * ib * pfa) + (vc * ic * pfa));
 
-    kwl = 1000 * Mread2[8];  //40020
-    kwu = 1000 * Mread2[9];  //40021
+      kwl = 1000 * Mread2[8];  //40020
+      kwu = 1000 * Mread2[9];  //40021
 
-    data = "{\"readings\":{";
-    data += "\"1\":{";
-    data += "\"Va\":\"";
-    data += String(va);
-    data += "\",\"Vb\":\"";
-    data += String(vb);
-    data += "\",\"Vc\":\"";
-    data += String(vc);
-    data += "\",\"Ia\":\"";
-    data += String(ia);
-    data += "\",\"Ib\":\"";
-    data += String(ib);
-    data += "\",\"Ic\":\"";
-    data += String(ic);
-    data += "\",\"total_kw\":\"";
-    data += String(kw);
-    data += "\",\"total_pf\":\"";
-    data += String(pfa + pfb + pfc);
-    data += "\",\"kwh_upper\":\"";
-    data += String(kwu);
-    data += "\",\"total_lower\":\"";
-    data += String(kwl);
-    data += "}}";
-
+      data = "{\"readings\":{";
+      data += "\"1\":{";
+      data += "\"Va\":\"";
+      data += String(va);
+      data += "\",\"Vb\":\"";
+      data += String(vb);
+      data += "\",\"Vc\":\"";
+      data += String(vc);
+      data += "\",\"Ia\":\"";
+      data += String(ia);
+      data += "\",\"Ib\":\"";
+      data += String(ib);
+      data += "\",\"Ic\":\"";
+      data += String(ic);
+      data += "\",\"total_kw\":\"";
+      data += String(kw);
+      data += "\",\"total_pf\":\"";
+      data += String(pfa + pfb + pfc);
+      data += "\",\"kwh_upper\":\"";
+      data += String(kwu);
+      data += "\",\"total_lower\":\"";
+      data += String(kwl);
+      data += "}}";
+    }
 
     mb.task();
     delay(100);

@@ -138,16 +138,8 @@ void loop() {
  
     // do nothing forevermore:
     while (true) {
-      if (client.connect("www.google.com", 80)) {
-        Serial.println("Connected!");
-        client.println("GET /get HTTP/1.1");
-    client.println("Host: httpbin.org");
-    client.println("Connection: close");
-    client.println();
-  } else {
-    // if you didn't get a connection to the server:
-    Serial.println("connection failed");
-  }
+      if(client.connected())
+        Serial.println("COnnected");
       delay(100);
     }
   }
